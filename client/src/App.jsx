@@ -70,10 +70,20 @@ function App() {
 
   async function handleSave(values) {
     if (source === 'preview') {
-      setPreviewStudents((current) => [
-        { ...values, _id: crypto.randomUUID() },
-        ...current,
-      ]);
+      setPreviewStudents((current) =>
+        editingStudent
+          ? current.map((record) =>
+              record._id === editingStudent._id
+                ? { ...editingStudent, ...values }
+                : record
+            )
+          : [{ ...values, _id: crypto.randomUUID() }, ...current]
+      );
+    } else if (editingStudent) {
+      const updated = await updateStudent(editingStudent._id, values);
+      setApiStudents((current) =>
+        current.map((record) => (record._id === updated._id ? updated : record))
+      );
     } else {
       const created = await createStudent(values);
       setApiStudents((current) => [created, ...current]);
