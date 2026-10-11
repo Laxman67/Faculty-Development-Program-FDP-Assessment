@@ -4,6 +4,7 @@ import StudentTable from './components/StudentTable.jsx';
 import { sampleStudents } from './data/sampleStudents.js';
 import { createStudent, fetchStudents } from './services/studentService.js';
 import { filterStudents } from './utils/studentFilters.js';
+import { ToastContainer } from 'react-toastify';
 import './App.css';
 
 function App() {
@@ -174,13 +175,11 @@ function App() {
               </button>
             </div>
           </div>
-
           {notice && (
             <p className="notice-message" role="status">
               {notice}
             </p>
           )}
-
           <div className="table-toolbar">
             <label className="search-field">
               <span className="search-icon" aria-hidden="true">
@@ -232,7 +231,6 @@ function App() {
               {visibleStudents.length} RECORDS
             </span>
           </div>
-
           {error && (
             <div className="state-panel error-panel" role="alert">
               <strong>Records could not be loaded</strong>
@@ -282,6 +280,9 @@ function App() {
           onSubmit={handleSave}
         />
       )}
+
+      {/* Toastify to display error and success Challenege :2 */}
+      <ToastContainer />
     </main>
   );
 }
