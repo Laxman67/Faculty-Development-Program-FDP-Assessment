@@ -2,10 +2,12 @@ import { useState } from 'react';
 // React hook form for form validation
 import { useForm } from 'react-hook-form';
 import { validateStudentFields } from '../utils/studentValidation.js';
+import { toast } from 'react-toastify';
 
 const statuses = ['Applied', 'Interview', 'Offered', 'Placed'];
 
 function StudentForm({ student, onClose, onSubmit }) {
+  // i've used 'react-hook-form';
   const {
     register,
     handleSubmit,
@@ -22,12 +24,11 @@ function StudentForm({ student, onClose, onSubmit }) {
 
   const [submitError, setSubmitError] = useState('');
 
-  // One rule per field: the message comes from validateStudentFields,
-  // so validation lives in a single place and errors clear automatically.
   function fieldRule(field) {
     return {
       validate: (value) =>
-        validateStudentFields({ ...getValues(), [field]: value })[field] ?? true,
+        validateStudentFields({ ...getValues(), [field]: value })[field] ??
+        true,
     };
   }
 
@@ -35,8 +36,12 @@ function StudentForm({ student, onClose, onSubmit }) {
     setSubmitError('');
     try {
       await onSubmit(values);
+      // toast to dipslay success message
+      toast.success('Form submitted!');
     } catch (error) {
       setSubmitError(error.message);
+      // toast to dipslay error message
+      toast.error(error.message);
     }
   }
 
