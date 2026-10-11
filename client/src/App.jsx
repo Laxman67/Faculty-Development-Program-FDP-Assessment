@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import StudentForm from './components/StudentForm.jsx';
 import StudentTable from './components/StudentTable.jsx';
 import { sampleStudents } from './data/sampleStudents.js';
-import { createStudent, fetchStudents } from './services/studentService.js';
+import { createStudent, fetchStudents, updateStudent } from './services/studentService.js';
 import { filterStudents } from './utils/studentFilters.js';
 import { ToastContainer } from 'react-toastify';
 import './App.css';
