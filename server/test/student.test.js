@@ -22,6 +22,7 @@ test('student schema requires the core fields and timestamps', async () => {
     assert.ok(error.errors.name)
     assert.ok(error.errors.email)
     assert.ok(error.errors.course)
+    assert.ok(error.errors.status)
     return true
   })
   assert.equal(Student.schema.options.timestamps, true)
@@ -39,6 +40,16 @@ test('student schema restricts placement status and declares unique normalized e
   assert.equal(Student.schema.path('email').options.unique, true)
 })
 
+test('student schema rejects malformed email addresses', async () => {
+  const student = new Student({
+    name: 'Aditi Sharma',
+    email: 'not-an-email',
+    course: 'B.Tech CSE',
+    status: 'Applied',
+  })
+  await assert.rejects(student.validate(), (error) => Boolean(error.errors.email))
+})
+
 test('duplicate email database errors map to HTTP 409', () => {
   assert.deepEqual(getStudentWriteError({ code: 11000 }, mongoose), {
     status: 409,
@@ -46,10 +57,33 @@ test('duplicate email database errors map to HTTP 409', () => {
   })
 })
 
-test('challenge 3: list query validates and applies search, status, and pagination', { todo: 'Candidate implementation' }, () => {
+test('list query applies search, status, and pagination', () => {
   assert.deepEqual(buildStudentQuery({ q: 'aditi', status: 'Applied', page: '2', pageSize: '5' }), {
     filter: { status: 'Applied', search: 'aditi' },
     page: 2,
     pageSize: 5,
   })
+})
+
+test('list query accepts limit and search aliases and applies safe defaults', () => {
+  assert.deepEqual(buildStudentQuery({ search: '  RAHUL ', limit: '25' }), {
+    filter: { search: 'RAHUL' },
+    page: 1,
+    pageSize: 25,
+  })
+  assert.deepEqual(buildStudentQuery({}), {
+    filter: {},
+    page: 1,
+    pageSize: 10,
+  })
+})
+
+test('list query rejects unsupported and invalid values', () => {
+  assert.throws(() => buildStudentQuery({ page: '0' }), /positive integer/i)
+  assert.throws(() => buildStudentQuery({ pageSize: '101' }), /no greater than 100/i)
+  assert.throws(() => buildStudentQuery({ status: 'Pending' }), /valid placement status/i)
+  assert.throws(() => buildStudentQuery({ q: ['a', 'b'] }), /single string/i)
+  assert.throws(() => buildStudentQuery({ unexpected: 'value' }), /unsupported query parameter/i)
+  assert.throws(() => buildStudentQuery({ q: 'a'.repeat(201) }), /no more than 200 characters/i)
+  assert.throws(() => buildStudentQuery({ page: '9007199254740991' }), /offset is too large/i)
 })

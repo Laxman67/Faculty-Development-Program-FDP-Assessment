@@ -19,15 +19,15 @@ The starter application may contain incomplete functionality. Focus on the requi
 
 ### Task 1 — Student Search and Status Filters (15 marks)
 
-Implement the student-list filtering behavior.
+Implement the student-list filtering behavior. 
 
 Requirements:
 - Search students by name or email, without case sensitivity.
-- Filter students by placement status.
+- Filter students by placement status.✅
 - Allow search and status filters to work together.
-- Update the displayed results when either filter changes.
-- Show a clear empty state when no records match.
-- Ensure changing or clearing filters restores the appropriate results.
+- Update the displayed results when either filter changes.✅
+- Show a clear empty state when no records match.✅
+- Ensure changing or clearing filters restores the appropriate results. ✅
 
 ### Task 2 — Form Validation and Editing (20 marks)
 

@@ -1,8 +1,27 @@
-export function validateStudent(student) {
-  if (!student.name.trim() || !student.email.trim() || !student.course.trim()) {
-    return 'Name, email, and course are required.'
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const statuses = ['Applied', 'Interview', 'Offered', 'Placed']
+
+export function validateStudentFields(student) {
+  const errors = {}
+
+  if (!student.name.trim()) errors.name = 'Student name is required.'
+
+  if (!student.email.trim()) {
+    errors.email = 'Email address is required.'
+  } else if (!emailPattern.test(student.email.trim())) {
+    errors.email = 'Enter a valid email address.'
   }
 
-  // Challenge 2: add email-format and duplicate-email validation.
-  return ''
+  if (!student.course.trim()) errors.course = 'Course is required.'
+  if (!student.status) {
+    errors.status = 'Placement status is required.'
+  } else if (!statuses.includes(student.status)) {
+    errors.status = 'Choose a valid placement status.'
+  }
+
+  return errors
+}
+
+export function validateStudent(student) {
+  return Object.values(validateStudentFields(student))[0] ?? ''
 }

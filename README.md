@@ -226,6 +226,14 @@ This endpoint confirms that the API is responding. Check backend logs for `Mongo
 curl -i http://localhost:5000/api/students
 ```
 
+`GET /api/students` returns a `success` flag, a `data` array, and a `pagination` object (`page`, `pageSize`, `total`, and `pages`). Use `q` to search names and email addresses, `status` to filter by placement status, and `page` with `pageSize` (or `limit`) for pagination. For example:
+
+```text
+http://localhost:5000/api/students?q=aditi&status=Applied&page=1&pageSize=10
+```
+
+The API rejects unsupported filters and invalid pagination values with a JSON `400` response.
+
 ### Troubleshooting
 
 - MongoDB service is not running: start it with the OS-specific service command in Section 7, then retry the connection check.

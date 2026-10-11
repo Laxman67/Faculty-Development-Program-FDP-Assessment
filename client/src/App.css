@@ -44,6 +44,8 @@ h2 span { margin-left: 6px; color: #91a099; font: 500 12px var(--sans); }
 .filter-field select { height: 100%; min-width: 147px; padding: 0 30px 0 11px; border: 0; outline: 0; color: #465650; background: transparent; font-size: 12px; }
 .text-button { border: 0; padding: 8px; color: #28745b; background: none; font-size: 11px; font-weight: 600; }
 .record-count { margin-left: auto; color: #9aa59f; font-size: 9px; font-weight: 700; letter-spacing: .7px; white-space: nowrap; }
+.pagination-controls { display: flex; justify-content: center; align-items: center; gap: 13px; padding: 13px 20px; color: #71807c; font-size: 11px; }
+.pagination-controls .secondary-button { min-height: 32px; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .student-table { width: 100%; border-collapse: collapse; text-align: left; }
 .student-table th { height: 41px; padding: 0 16px; color: #88958f; background: #fafcfb; font-size: 9px; font-weight: 700; letter-spacing: .7px; white-space: nowrap; }
@@ -84,6 +86,8 @@ h2 span { margin-left: 6px; color: #91a099; font: 500 12px var(--sans); }
 .student-form { display: grid; gap: 15px; }
 .form-field { display: grid; gap: 6px; color: #53635c; font-size: 11px; font-weight: 600; }
 .form-field input, .form-field select { width: 100%; height: 39px; padding: 0 10px; border: 1px solid #dce5df; border-radius: 3px; color: #24332d; background: white; font-size: 12px; }
+.form-field [aria-invalid="true"] { border-color: #bf6a5e; }
+.field-error { color: #a34538; font-size: 10px; font-weight: 500; }
 .form-error { margin: 0; color: #a34538; font-size: 11px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 6px; }
 .cancel-button { min-height: 40px; padding: 0 13px; border: 1px solid #dfe7e2; border-radius: 4px; color: #596961; background: white; font-size: 12px; }

@@ -23,4 +23,16 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+app.use("/api", (_req, res) => {
+  res.status(404).json({ success: false, message: "API endpoint not found" });
+});
+
+app.use((error, _req, res, _next) => {
+  if (error.type === "entity.parse.failed") {
+    return res.status(400).json({ success: false, message: "Request body contains invalid JSON" });
+  }
+
+  return res.status(500).json({ success: false, message: "An unexpected server error occurred" });
+});
+
 export default app;

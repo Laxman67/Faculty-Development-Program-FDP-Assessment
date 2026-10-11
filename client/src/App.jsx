@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react'
 import StudentForm from './components/StudentForm.jsx'
 import StudentTable from './components/StudentTable.jsx'
 import { sampleStudents } from './data/sampleStudents.js'
-import { createStudent, fetchStudents } from './services/studentService.js'
+import { createStudent, fetchStudentPage, updateStudent } from './services/studentService.js'
 import { filterStudents } from './utils/studentFilters.js'
 import './App.css'
 
 function App() {
   const [apiStudents, setApiStudents] = useState([])
   const [previewStudents, setPreviewStudents] = useState(sampleStudents)
+  const [pagination, setPagination] = useState(null)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All statuses')
+  const [page, setPage] = useState(1)
   const [source, setSource] = useState('api')
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -18,20 +20,39 @@ function App() {
   const [notice, setNotice] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState(null)
-  const students = source === 'preview' ? previewStudents : apiStudents
 
   useEffect(() => {
     if (source !== 'api') return
 
-    fetchStudents()
-      .then((records) => setApiStudents(records))
-      .catch((requestError) => setError(requestError.message))
-      .finally(() => setLoading(false))
-  }, [source, refreshKey])
+    const controller = new AbortController()
+    let currentRequest = true
 
+    fetchStudentPage({ query, status: statusFilter, page, signal: controller.signal })
+      .then(({ students: records, pagination: pageInfo }) => {
+        if (!currentRequest) return
+        setApiStudents(records)
+        setPagination(pageInfo)
+      })
+      .catch((requestError) => {
+        if (currentRequest && requestError.name !== 'AbortError') {
+          setError(requestError.message)
+        }
+      })
+      .finally(() => {
+        if (currentRequest) setLoading(false)
+      })
+
+    return () => {
+      currentRequest = false
+      controller.abort()
+    }
+  }, [source, query, statusFilter, page, refreshKey])
+
+  const students = source === 'preview' ? previewStudents : apiStudents
   const visibleStudents = filterStudents(students, query, statusFilter)
-  const placedCount = students.filter((student) => student.status === 'Placed').length
-  const offeredCount = students.filter((student) => student.status === 'Offered').length
+  const placedCount = visibleStudents.filter((student) => student.status === 'Placed').length
+  const offeredCount = visibleStudents.filter((student) => student.status === 'Offered').length
+  const totalCount = source === 'api' ? pagination?.total ?? 0 : visibleStudents.length
 
   function openCreateForm() {
     setEditingStudent(null)
@@ -46,9 +67,11 @@ function App() {
   }
 
   function selectSource(nextSource) {
+    if (nextSource === source) return
     setSource(nextSource)
     setError('')
     setLoading(nextSource === 'api')
+    setPage(1)
   }
 
   function retryLoading() {
@@ -59,10 +82,22 @@ function App() {
 
   async function handleSave(values) {
     if (source === 'preview') {
-      setPreviewStudents((current) => [{ ...values, _id: crypto.randomUUID() }, ...current])
+      if (editingStudent) {
+        setPreviewStudents((current) => current.map((record) => (
+          record._id === editingStudent._id ? { ...record, ...values } : record
+        )))
+      } else {
+        setPreviewStudents((current) => [{ ...values, _id: crypto.randomUUID() }, ...current])
+      }
     } else {
-      const created = await createStudent(values)
-      setApiStudents((current) => [created, ...current])
+      if (editingStudent) {
+        await updateStudent(editingStudent._id, values)
+      } else {
+        await createStudent(values)
+      }
+      setLoading(true)
+      setError('')
+      setRefreshKey((key) => key + 1)
     }
 
     setFormOpen(false)
@@ -98,18 +133,18 @@ function App() {
         <section className="summary-grid" aria-label="Placement summary">
           <article className="summary-item summary-total">
             <span className="summary-label">TOTAL STUDENTS</span>
-            <strong>{students.length}</strong>
-            <span className="summary-foot">In the current view</span>
+            <strong>{totalCount}</strong>
+            <span className="summary-foot">{source === 'api' ? 'Matching records' : 'In the current view'}</span>
           </article>
           <article className="summary-item">
             <span className="summary-label">PLACED</span>
             <strong>{placedCount}</strong>
-            <span className="summary-foot">Offer accepted</span>
+            <span className="summary-foot">{source === 'api' ? 'On this page' : 'Offer accepted'}</span>
           </article>
           <article className="summary-item">
             <span className="summary-label">OFFERS</span>
             <strong>{offeredCount}</strong>
-            <span className="summary-foot">Awaiting decision</span>
+            <span className="summary-foot">{source === 'api' ? 'On this page' : 'Awaiting decision'}</span>
           </article>
           <article className="summary-aside">
             <span className="aside-symbol" aria-hidden="true">↗</span>
@@ -122,7 +157,7 @@ function App() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">DIRECTORY</p>
-              <h2 id="records-title">Student records <span>{students.length}</span></h2>
+              <h2 id="records-title">Student records <span>{totalCount}</span></h2>
             </div>
             <div className="source-switch" aria-label="Records source">
               <button
@@ -150,13 +185,34 @@ function App() {
                 type="search"
                 value={query}
                 placeholder="Search name or email"
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                  setPage(1)
+                  setLoading(source === 'api')
+                  setError('')
+                }}
               />
-              {query && <button type="button" aria-label="Clear search" onClick={() => setQuery('')}>×</button>}
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => {
+                    setQuery('')
+                    setPage(1)
+                    setLoading(source === 'api')
+                    setError('')
+                  }}
+                >×</button>
+              )}
             </label>
             <label className="filter-field">
               <span className="sr-only">Filter by placement status</span>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <select value={statusFilter} onChange={(event) => {
+                setStatusFilter(event.target.value)
+                setPage(1)
+                setLoading(source === 'api')
+                setError('')
+              }}>
                 <option>All statuses</option>
                 <option>Applied</option>
                 <option>Interview</option>
@@ -168,7 +224,13 @@ function App() {
               <button
                 className="text-button clear-filters"
                 type="button"
-                onClick={() => { setQuery(''); setStatusFilter('All statuses') }}
+                onClick={() => {
+                  setQuery('')
+                  setStatusFilter('All statuses')
+                  setPage(1)
+                  setLoading(source === 'api')
+                  setError('')
+                }}
               >Clear filters</button>
             )}
             <span className="record-count">{visibleStudents.length} RECORDS</span>
@@ -184,10 +246,35 @@ function App() {
           {!error && loading && <div className="state-panel" role="status">Loading student records…</div>}
           {!error && !loading && (
             <StudentTable
-              students={visibleStudents}
+              students={source === 'preview' ? visibleStudents : apiStudents}
               hasFilters={Boolean(query || statusFilter !== 'All statuses')}
               onEdit={openEditForm}
             />
+          )}
+          {source === 'api' && !error && !loading && pagination && pagination.pages > 1 && (
+            <nav className="pagination-controls" aria-label="Student record pages">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setPage((current) => Math.max(1, current - 1))
+                  setLoading(true)
+                  setError('')
+                }}
+                disabled={page <= 1}
+              >Previous</button>
+              <span>Page {pagination.page} of {pagination.pages}</span>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setPage((current) => Math.min(pagination.pages, current + 1))
+                  setLoading(true)
+                  setError('')
+                }}
+                disabled={page >= pagination.pages}
+              >Next</button>
+            </nav>
           )}
           <div className="table-footer">
             <span>PLACEMENT OFFICE <i /></span>
